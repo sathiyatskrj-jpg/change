@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'High Risers Pixel',
+      title: 'Rajubhai Ki Gang',
       theme: ThemeData(
         fontFamily: 'Baloo', // Pixel-ish font fallback
         brightness: Brightness.dark,
@@ -91,7 +91,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
             ),
             const SizedBox(height: 20),
             const Text(
-              "PIXEL ADVENTURE",
+              "Rajubhai Ki Gang",
                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 4),
             ),
             const SizedBox(height: 10),
@@ -151,7 +151,7 @@ class MainMenuOverlay extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text("HIGH RISERS", style: TextStyle(fontSize: 48, color: Colors.white, fontWeight: FontWeight.w900)),
+            const Text("Rajubhai Ki Gang", style: TextStyle(fontSize: 40, color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 2)),
             const SizedBox(height: 40),
             ElevatedButton(
               style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 20), backgroundColor: Colors.purpleAccent),
