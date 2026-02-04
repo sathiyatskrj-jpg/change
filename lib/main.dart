@@ -8,6 +8,7 @@ import 'package:flame/game.dart';
 import 'package:flame/particles.dart'; // For particles
 import 'package:flame_audio/flame_audio.dart';
 import 'package:flutter/material.dart' hide Image, Draggable;
+import 'character_data.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -382,23 +383,55 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef<Pixel
 
   @override
   void render(Canvas canvas) {
-    // Draw Body
-    // Shirt
-    canvas.drawRect(Rect.fromLTWH(8, 12, 16, 14), Paint()..color = color);
+    if (humanSpriteGrid.isEmpty) return;
     
-    // Head (Skin Tone - generic)
-    canvas.drawRect(Rect.fromLTWH(10, 2, 12, 10), Paint()..color = const Color(0xFFFFCCAA));
-    
-    // Hair (Dark)
-    canvas.drawRect(Rect.fromLTWH(10, 0, 12, 4), Paint()..color = Colors.black);
-    
-    // Pants (Darker shade of main color)
-    canvas.drawRect(Rect.fromLTWH(10, 26, 6, 6), Paint()..color = Colors.black54);
-    canvas.drawRect(Rect.fromLTWH(18, 26, 6, 6), Paint()..color = Colors.black54);
+    final pixelW = size.x / humanSpriteGrid[0].length;
+    final pixelH = size.y / humanSpriteGrid.length;
 
-    // Eyes
-    canvas.drawRect(const Rect.fromLTWH(18, 6, 2, 2), Paint()..color = Colors.black);
-    canvas.drawRect(const Rect.fromLTWH(14, 6, 2, 2), Paint()..color = Colors.black);
+    for (int y = 0; y < humanSpriteGrid.length; y++) {
+      for (int x = 0; x < humanSpriteGrid[y].length; x++) {
+        final pixelType = humanSpriteGrid[y][x];
+        if (pixelType == 0) continue;
+
+        final paint = Paint();
+        switch (pixelType) {
+          case 1: // Outline
+            paint.color = Colors.black;
+            break;
+          case 2: // Skin
+            paint.color = const Color(0xFFFFC080);
+            break;
+          case 3: // Hair
+            paint.color = Colors.brown.shade900;
+            break;
+          case 4: // Shirt (Main Character Color)
+            paint.color = color;
+            break;
+          case 5: // Pants
+            paint.color = Colors.blueGrey.shade800;
+            break;
+          case 6: // Shoes
+            paint.color = Colors.white;
+            break;
+          case 7: // Eyes
+            paint.color = Colors.white;
+            break;
+        }
+        
+        canvas.drawRect(
+          Rect.fromLTWH(x * pixelW, y * pixelH, pixelW, pixelH),
+          paint,
+        );
+        
+        // Add pupil for eyes
+        if (pixelType == 7) {
+           canvas.drawRect(
+             Rect.fromLTWH(x * pixelW + pixelW*0.5, y * pixelH + pixelH*0.2, pixelW*0.3, pixelH*0.3),
+             Paint()..color = Colors.black
+           );
+        }
+      }
+    }
   }
 
   @override
