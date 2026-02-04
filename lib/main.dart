@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'High Risers Pixel',
       theme: ThemeData(
-        fontFamily: 'Courier', // Pixel-ish font fallback
+        fontFamily: 'Baloo', // Pixel-ish font fallback
         brightness: Brightness.dark,
         primarySwatch: Colors.deepPurple,
       ),

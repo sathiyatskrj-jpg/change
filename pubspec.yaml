@@ -63,6 +63,15 @@ flutter:
   assets:
     - assets/audio/music/
     - assets/audio/sfx/
+    - assets/fonts/
+
+  fonts:
+    - family: Baloo
+      fonts:
+        - asset: assets/fonts/Baloo.ttf
+    - family: Vera
+      fonts:
+        - asset: assets/fonts/Vera.ttf
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
