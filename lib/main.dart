@@ -382,9 +382,23 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef<Pixel
 
   @override
   void render(Canvas canvas) {
-    canvas.drawRect(size.toRect(), Paint()..color = color);
+    // Draw Body
+    // Shirt
+    canvas.drawRect(Rect.fromLTWH(8, 12, 16, 14), Paint()..color = color);
+    
+    // Head (Skin Tone - generic)
+    canvas.drawRect(Rect.fromLTWH(10, 2, 12, 10), Paint()..color = const Color(0xFFFFCCAA));
+    
+    // Hair (Dark)
+    canvas.drawRect(Rect.fromLTWH(10, 0, 12, 4), Paint()..color = Colors.black);
+    
+    // Pants (Darker shade of main color)
+    canvas.drawRect(Rect.fromLTWH(10, 26, 6, 6), Paint()..color = Colors.black54);
+    canvas.drawRect(Rect.fromLTWH(18, 26, 6, 6), Paint()..color = Colors.black54);
+
     // Eyes
-    canvas.drawRect(const Rect.fromLTWH(20, 5, 8, 8), Paint()..color = Colors.white);
+    canvas.drawRect(const Rect.fromLTWH(18, 6, 2, 2), Paint()..color = Colors.black);
+    canvas.drawRect(const Rect.fromLTWH(14, 6, 2, 2), Paint()..color = Colors.black);
   }
 
   @override
