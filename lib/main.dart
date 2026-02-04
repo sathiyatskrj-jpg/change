@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 
+
+import 'package:flame/collisions.dart'; // Required for Hitboxes and Callbacks
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/events.dart';
@@ -55,14 +57,16 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
     
     _scaleAnimation = CurvedAnimation(parent: _controller, curve: Curves.elasticOut);
 
-    Timer(const Duration(seconds: 3), () {
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (_,__,___) => const GamePage(),
-          transitionsBuilder: (_, a, __, c) => FadeTransition(opacity: a, child: c),
-          transitionDuration: const Duration(milliseconds: 800)
-        ),
-      );
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (_,__,___) => const GamePage(),
+            transitionsBuilder: (_, a, __, c) => FadeTransition(opacity: a, child: c),
+            transitionDuration: const Duration(milliseconds: 800)
+          ),
+        );
+      }
     });
   }
 
@@ -86,6 +90,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                 width: 120, height: 120,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(colors: [Color(0xFFff00cc), Color(0xFF333399)]),
+                  shape: BoxShape.circle,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(color: Colors.purple.withOpacity(0.6), blurRadius: 40, spreadRadius: 10)
@@ -340,23 +345,7 @@ class PixelAdventure extends FlameGame with TapDetector, HasCollisionDetection {
   Future<void> _addParallaxBackground() async {
     // Manually creating a starfield using particles or simple shapes is cheaper than loading non-existent images
     // Flame Parallax usually needs images. Let's use a particle generator for the BG instead for the "Starfield" effect.
-    add(
-      ParticleSystemComponent(
-        particle: RepeatedParticle(
-          child: ComputedParticle(
-            renderer: (canvas, particle) {
-               // Draw stars
-               final paint = Paint()..color = Colors.white.withOpacity(particle.progress < 0.5 ? particle.progress * 2 : (1 - particle.progress) * 2);
-               canvas.drawCircle(Offset.zero, _rnd.nextDouble() * 2, paint);
-            },
-            lifespan: 2,
-          ),
-          count: 50,
-        ),
-        position: Vector2(0, 0),
-        size: size,
-      )
-    );
+    // Use component-based starfield for stability
     // Note: This is a static glitchy effect. 
     // Real parallax needs images. I'll stick to a simple generated star layer.
     
