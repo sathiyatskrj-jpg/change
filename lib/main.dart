@@ -2,144 +2,363 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flame/components.dart';
+import 'package:flame/effects.dart'; // For screen shake/visual effects
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
-import 'package:flame/palette.dart';
+import 'package:flame/particles.dart'; // For particles
 import 'package:flame_audio/flame_audio.dart';
 import 'package:flutter/material.dart' hide Image, Draggable;
-import 'package:flutter/widgets.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(
-    const GameWidget<PixelAdventure>.controlled(
-      gameFactory: PixelAdventure.new,
-    ),
-  );
+  runApp(const MyApp());
 }
 
-class PixelAdventure extends FlameGame with TapDetector, HasCollisionDetection {
-  // Character Data
-  final Map<String, Color> characters = {
-    'Saikat': const Color(0xFFFF0000), // Red
-    'Kunal': const Color(0xFF0000FF), // Blue
-    'Raziya': const Color(0xFFFF00FF), // Magenta
-    'Durga': const Color(0xFFFFD700), // Gold
-    'Nashia': const Color(0xFF00FF00), // Green
-    'Santoshi': const Color(0xFF00FFFF), // Cyan
-    'Ashlee': const Color(0xFFFFA500), // Orange
-    'Sathiya': const Color(0xFFA52A2A), // Brown
-    'Pobitro': const Color(0xFF800080), // Purple
-  };
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
-  late String currentCharacter;
-  late Player player;
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'High Risers Pixel',
+      theme: ThemeData(
+        fontFamily: 'Courier', // Pixel-ish font fallback
+        brightness: Brightness.dark,
+        primarySwatch: Colors.deepPurple,
+      ),
+      home: const SplashPage(),
+    );
+  }
+}
+
+// -------------------- SPLASH SCREEN --------------------
+class SplashPage extends StatefulWidget {
+  const SplashPage({super.key});
+
+  @override
+  State<SplashPage> createState() => _SplashPageState();
+}
+
+class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+       duration: const Duration(seconds: 2), vsync: this
+    )..forward();
+    
+    _scaleAnimation = CurvedAnimation(parent: _controller, curve: Curves.elasticOut);
+
+    Timer(const Duration(seconds: 3), () {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const GamePage()),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF211F30),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ScaleTransition(
+              scale: _scaleAnimation,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(color: Colors.purpleAccent, blurRadius: 20, spreadRadius: 5)
+                  ]
+                ),
+                child: const Icon(Icons.rocket_launch, size: 60, color: Colors.purple),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              "PIXEL ADVENTURE",
+               style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 4),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              "High Risers Edition",
+               style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// -------------------- GAME PAGE & OVERLAYS --------------------
+class GamePage extends StatefulWidget {
+  const GamePage({super.key});
+
+  @override
+  State<GamePage> createState() => _GamePageState();
+}
+
+class _GamePageState extends State<GamePage> {
+  late PixelAdventure game;
+
+  @override
+  void initState() {
+    super.initState();
+    game = PixelAdventure();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: GameWidget(
+        game: game,
+        overlayBuilderMap: {
+          'MainMenu': (context, PixelAdventure game) => MainMenuOverlay(game: game),
+          'GameOver': (context, PixelAdventure game) => GameOverOverlay(game: game),
+          'HUD': (context, PixelAdventure game) => HudOverlay(game: game),
+        },
+        initialActiveOverlays: const ['MainMenu'],
+      ),
+    );
+  }
+}
+
+class MainMenuOverlay extends StatelessWidget {
+  final PixelAdventure game;
+  const MainMenuOverlay({super.key, required this.game});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black87,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text("HIGH RISERS", style: TextStyle(fontSize: 48, color: Colors.white, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 40),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 20), backgroundColor: Colors.purpleAccent),
+              onPressed: () {
+                game.startGame();
+              }, 
+              child: const Text("PLAY GAME", style: TextStyle(fontSize: 24)),
+            ),
+            const SizedBox(height: 20),
+            const Text("Select Character:", style: TextStyle(color: Colors.white70)),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 10,
+              children: game.characters.entries.map((e) {
+                return GestureDetector(
+                  onTap: () {
+                     game.setCharacter(e.key);
+                     // Visual feedback needed here practically, but simplified for now
+                  },
+                  child: Container(
+                    width: 40, height: 40,
+                    color: e.value,
+                    child: Center(child: Text(e.key[0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+                  ),
+                );
+              }).toList(),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class GameOverOverlay extends StatelessWidget {
+  final PixelAdventure game;
+  const GameOverOverlay({super.key, required this.game});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black54,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text("GAME OVER", style: TextStyle(fontSize: 40, color: Colors.redAccent, fontWeight: FontWeight.bold)),
+            Text("Score: ${game.score}", style: const TextStyle(fontSize: 30, color: Colors.white)),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: () => game.resetGame(), 
+              child: const Text("RETRY"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class HudOverlay extends StatelessWidget {
+  final PixelAdventure game;
+  const HudOverlay({super.key, required this.game});
+
+  @override
+  Widget build(BuildContext context) {
+    // In a real app we'd use ValueListenableBuilder or StreamBuilder for score
+    // For now, static or polling. Flame UI integration is tricky without state management pkg.
+    // We will let the Flame Engine draw the score to keep it synced perfectly.
+    return const SizedBox.shrink(); 
+  }
+}
+
+
+// -------------------- FLAME GAME LOGIC --------------------
+
+class PixelAdventure extends FlameGame with TapDetector, HasCollisionDetection {
+  // Config
+  final Map<String, Color> characters = {
+    'Saikat': const Color(0xFFFF0000), 
+    'Kunal': const Color(0xFF0000FF), 
+    'Raziya': const Color(0xFFFF00FF), 
+    'Durga': const Color(0xFFFFD700), 
+    'Nashia': const Color(0xFF00FF00), 
+    'Santoshi': const Color(0xFF00FFFF), 
+    'Ashlee': const Color(0xFFFFA500), 
+    'Sathiya': const Color(0xFFA52A2A), 
+    'Pobitro': const Color(0xFF800080), 
+  };
   
-  // Game State
+  String currentCharacter = 'Saikat';
+  Player? player;
   int score = 0;
-  TextComponent? scoreText;
+  TextComponent? scoreComponent;
+  bool isPlaying = false;
+  
+  // Shake effect
+  final Random _rnd = Random();
 
   @override
   Color backgroundColor() => const Color(0xFF211F30);
 
   @override
   FutureOr<void> onLoad() async {
-    // Start with the first character
-    currentCharacter = characters.keys.first;
-
-    // Camera setup
     camera.viewfinder.anchor = Anchor.center;
-    
-    // Add Walls (Screen boundaries)
     add(ScreenHitbox());
-
-    // Add Floors (Procedural-ish)
-    _generateFloors();
-
-    // Spawn Player
-    _spawnPlayer();
-
-    // UI
-    scoreText = TextComponent(
-      text: 'Floors: 0  |  Char: $currentCharacter',
-      position: Vector2(20, 20),
-      textRenderer: TextPaint(
-        style: const TextStyle(color: Colors.white, fontSize: 24),
-      ),
-    );
-    add(scoreText!); // Fix: Add strictly to the game world if using simple TextComponent, or HUD
-    // Ideally use camera.viewport.add for HUD, but for simplicity in Flame 1.x logic:
-    camera.viewport.add(scoreText!);
-
-    // Audio
-    _playRandomMusic();
+    
+    // Audio (Preload)
+    // FlameAudio.bgm.initialize(); 
     
     return super.onLoad();
   }
 
-  void _spawnPlayer() {
-    if (children.contains(player)) {
-      player.removeFromParent();
-    }
+  void startGame() {
+    overlays.remove('MainMenu');
+    overlays.remove('GameOver');
+    overlays.add('HUD');
+    
+    resetGame();
+  }
+
+  void resetGame() {
+    isPlaying = true;
+    score = 0;
+    
+    // Cleanup
+    children.whereType<Player>().forEach((p) => p.removeFromParent());
+    children.whereType<Platform>().forEach((p) => p.removeFromParent());
+    
+    // Level Gen
+    _generateFloors();
+    
+    // Player
     player = Player(
       color: characters[currentCharacter]!,
-      position: Vector2(0, 100), // Centerish
+      position: Vector2(0, 0),
     );
-    world.add(player); // Add to world, camera follows world
-    camera.follow(player, maxSpeed: 1000, snap: true);
-  }
-
-  void _generateFloors() {
-    // Generate some basic platforms
-    // For simplicity, just some static floors for now
-    world.add(Platform(position: Vector2(0, 200), size: Vector2(400, 20)));
-    world.add(Platform(position: Vector2(0, 0), size: Vector2(200, 20)));
-    world.add(Platform(position: Vector2(0, -200), size: Vector2(400, 20)));
-  }
-
-  void _playRandomMusic() async {
-    // Try to list files or just play a known one if we could list them dynamically
-    // Since we copied blindly, let's try a simple heuristic or user can rename?
-    // Actually, flame_audio needs files in assets/audio/music
-    // We copied *.m4a there.
-    // Let's try to play ANY file if we knew the name. 
-    // Since we don't know the exact filenames without listing again (which I did earlier),
-    // I will try to load all m4a I saw from the list_dir output earlier.
-    // BUt for now, let's skip auto-play or try one specific one if I recall the name.
-    // "2510172059789788.m4a" was in the list.
+    world.add(player!);
+    camera.follow(player!, maxSpeed: 1000, snap: true);
+    
+    // Score UI
+    if (scoreComponent != null) scoreComponent!.removeFromParent();
+    scoreComponent = TextComponent(
+      text: '0', 
+      position: Vector2(0, -250), // localized
+      anchor: Anchor.center,
+      scale: Vector2.all(2),
+    );
+    // Ideally add to viewport, but camera.viewport doesn't easily accept Components in v1.16 without bells/whistles
+    // We'll add it to world but fixed position logic is harder. 
+    // Let's rely on Overlay for HUD if we wanted, but Flame text is nicer for "in-game" feel
+    world.add(scoreComponent!);
+    
+    // Music
     try {
-        await FlameAudio.bgm.play('2510172059789788.m4a');
-    } catch (e) {
-        print("Audio not found or error: $e");
-    }
+      FlameAudio.bgm.play('2510172059789788.m4a');
+    } catch(e) {}
+    
+    overlays.remove('GameOver');
+    overlays.remove('MainMenu');
+  }
+
+  void setCharacter(String name) {
+    currentCharacter = name;
+  }
+  
+  void gameOver() {
+    isPlaying = false;
+    overlays.add('GameOver');
+    FlameAudio.bgm.stop();
+  }
+  
+  void addScore() {
+    score++;
+    scoreComponent?.text = '$score';
+    // Visual pop
+    scoreComponent?.add(
+      ScaleEffect.by(Vector2.all(1.5), EffectController(duration: 0.1, reverseDuration: 0.1))
+    );
+  }
+
+  void shakeCamera() {
+    // Simple manual shake
+    camera.viewfinder.position += Vector2((_rnd.nextDouble() - 0.5) * 10, (_rnd.nextDouble() - 0.5) * 10);
+    // EffectController would be better, but manual jerk is "naive" but works for simple feedback
   }
 
   @override
   void onTap() {
-    // Jump / Change Direction (High Risers style)
-    player.jump();
-    
-    // Debug: Cycle character on tap too? No, that ruins gameplay.
+    if (isPlaying && player != null) {
+      player!.jump();
+    }
   }
-  
-  void cycleCharacter() {
-    final names = characters.keys.toList();
-    final index = names.indexOf(currentCharacter);
-    final nextIndex = (index + 1) % names.length;
-    currentCharacter = names[nextIndex];
-    
-    // Respawn with new color
-    player.removeFromParent();
-    _spawnPlayer();
-    scoreText?.text = 'Floors: $score  |  Char: $currentCharacter';
+
+  void _generateFloors() {
+    // Infinite generator logic placeholder
+    // Currently static
+    for(int i = -10; i < 50; i++) {
+        world.add(Platform(position: Vector2(0, i * -200.0 + 200), size: Vector2(size.x > 0 ? size.x : 400, 20)));
+    }
   }
 }
 
 class Player extends PositionComponent with CollisionCallbacks, HasGameRef<PixelAdventure> {
   final Color color;
-  Vector2 velocity = Vector2(200, 0); // Moving right
-  static const double gravity = 1000;
-  static const double jumpForce = -400;
+  Vector2 velocity = Vector2(300, 0); 
+  static const double gravity = 1200;
+  static const double jumpForce = -600;
   bool isGrounded = false;
 
   Player({required this.color, required Vector2 position}) 
@@ -148,44 +367,88 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef<Pixel
   @override
   void onLoad() {
     add(RectangleHitbox());
+    // Trail effect
+    add(
+      ParticleSystemComponent(
+        particle: ComputedParticle(
+          renderer: (canvas, particle) {
+             canvas.drawRect(Rect.fromLTWH(0, 0, 10 * particle.progress, 10 * particle.progress), Paint()..color = color.withOpacity(1 - particle.progress));
+          },
+          lifespan: 0.5,
+        ),
+      )
+    );
   }
 
   @override
   void render(Canvas canvas) {
     canvas.drawRect(size.toRect(), Paint()..color = color);
+    // Eyes
+    canvas.drawRect(const Rect.fromLTWH(20, 5, 8, 8), Paint()..color = Colors.white);
   }
 
   @override
   void update(double dt) {
     super.update(dt);
+    if (!gameRef.isPlaying) return;
     
-    // Auto run
-    // Apply Gravity
     velocity.y += gravity * dt;
-    
-    // Apply Velocity
     position += velocity * dt;
-
-    // Floor Collision Check (Simple bounds for now, actual collision in onCollision)
+    
+    // Death check
+    if (position.y > 1000) { // Fell too far
+       gameRef.gameOver();
+    }
+    
+    // Emit particles
+    if (gameRef.isPlaying) {
+        gameRef.world.add(
+            ParticleSystemComponent(
+                position: position,
+                particle: AcceleratedParticle(
+                    acceleration: Vector2(0, 100),
+                    speed: Vector2.random() * 50 - Vector2(25, 25),
+                    child: CircleParticle(radius: 2, paint: Paint()..color = color.withOpacity(0.5))
+                )
+            )
+        );
+    }
   }
 
   void jump() {
     if (isGrounded) {
        velocity.y = jumpForce;
        isGrounded = false;
+       // Jump sound
+       // FlameAudio.play('sfx.m4a');
+       
+       // Squeeze effect
+       add(ScaleEffect.by(Vector2(0.8, 1.2), EffectController(duration: 0.1, reverseDuration: 0.1)));
     }
   }
 
   @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
     if (other is ScreenHitbox) {
-      // Bounce off walls
-      if (position.x <= 0 || position.x >= gameRef.size.x) { // Very rough
+      if (position.x <= -gameRef.size.x/2 || position.x >= gameRef.size.x/2) { 
          velocity.x = -velocity.x;
+         gameRef.shakeCamera();
+         // Flip visual
+         scale.x = -scale.x;
       }
     } else if (other is Platform) {
-       // Land on top
-       if (velocity.y > 0 && position.y + size.y/2 <= other.position.y + other.size.y/2) {
+       if (velocity.y > 0 && position.y + size.y/2 <= other.position.y + other.size.y/2 + 5) {
+          if (!isGrounded) {
+              // Landed
+              gameRef.addScore();
+              // Land particle splash
+               gameRef.world.add(
+                ParticleSystemComponent(
+                    position: position + Vector2(0, size.y/2),
+                    particle: CircleParticle(radius: 10, paint: Paint()..color = Colors.white.withOpacity(0.8), lifespan: 0.2)
+                )
+            );
+          }
           velocity.y = 0;
           isGrounded = true;
           position.y = other.position.y - other.size.y/2 - size.y/2;
@@ -206,6 +469,8 @@ class Platform extends PositionComponent with CollisionCallbacks {
   
   @override
   void render(Canvas canvas) {
-    canvas.drawRect(size.toRect(), Paint()..color = const Color(0xFF555555));
+    // Neon style platform
+    canvas.drawRect(size.toRect(), Paint()..color = Colors.cyanAccent..style = PaintingStyle.stroke..strokeWidth = 2);
+    canvas.drawRect(size.toRect(), Paint()..color = Colors.black.withOpacity(0.5));
   }
 }
